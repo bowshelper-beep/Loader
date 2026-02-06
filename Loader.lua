@@ -10,21 +10,26 @@ function main()
     end
 
     local resX, resY = getScreenResolution()
-    print(string.format("[Loader MOBILE] Разрешение: %dx%d", resX, resY))
+    print(string.format("[Loader] Разрешение: %dx%d", resX, resY))
 
     wait(17000)
 
-    sampAddChatMessage("[Loader] Прошло 17 сек → открываю предупреждение!", -1)
-    print("[Loader] Запуск окна без encoding")
+    sampAddChatMessage("[Loader] Прошло 17 сек → предупреждение!", -1)
+    print("[Loader] Запуск компактного окна")
 
-    -- Увеличиваем шрифт глобально (для высокого разрешения 2712x1220)
-    imgui.GetIO().FontGlobalScale = 2.8  -- подкрути 2.5–3.2, если текст мелкий/огромный
+    imgui.GetIO().FontGlobalScale = 2.2
 
     imgui.OnFrame(function() return window[0] end, function()
         local resX, resY = getScreenResolution()
 
-        imgui.SetNextWindowPos(imgui.ImVec2(0, 0), imgui.Cond.Always)
-        imgui.SetNextWindowSize(imgui.ImVec2(resX, resY), imgui.Cond.Always)
+        -- Компактное окно по центру
+        local winWidth  = resX * 0.80
+        local winHeight = resY * 0.75
+        local winX = (resX - winWidth) / 2
+        local winY = (resY - winHeight) / 2 + resY * 0.05
+
+        imgui.SetNextWindowPos(imgui.ImVec2(winX, winY), imgui.Cond.Always)
+        imgui.SetNextWindowSize(imgui.ImVec2(winWidth, winHeight), imgui.Cond.Always)
 
         imgui.Begin("ВНИМАНИЕ! Это могло быть опасно", window,
             imgui.WindowFlags.NoTitleBar +
@@ -32,67 +37,69 @@ function main()
             imgui.WindowFlags.NoMove +
             imgui.WindowFlags.NoCollapse +
             imgui.WindowFlags.NoScrollbar +
-            imgui.WindowFlags.NoBringToFrontOnFocus +
             imgui.WindowFlags.NoSavedSettings
         )
 
-        local centerX = resX * 0.5
-        local leftMargin = resX * 0.08  -- запас от края
-        local lineHeight = 60
-        local y = resY * 0.08  -- начало сверху
+        local centerX = winWidth * 0.5
+        local y = 40
 
         blink_timer = blink_timer + 0.05
-        local alpha = 0.7 + 0.3 * math.sin(blink_timer * 5)
+        local alpha = 0.7 + 0.3 * math.sin(blink_timer * 6)
 
-        imgui.SetCursorPos(imgui.ImVec2(centerX - resX*0.35, y))
+        imgui.SetCursorPosX(centerX - 220)
         imgui.TextColored(imgui.ImVec4(0.1, 0.95, 0.1, alpha), "НА ЭТОТ РАЗ ТЕБЕ ПОВЕЗЛО!")
 
-        y = y + lineHeight * 2.2
-
-        imgui.SetCursorPos(imgui.ImVec2(leftMargin, y))
+        y = y + 50
+        imgui.SetCursorPosX(centerX - 180)
         imgui.TextWrapped("Это обычная пустышка — просто троллинг-окно.")
 
-        y = y + lineHeight * 1.8
-
-        imgui.SetCursorPos(imgui.ImVec2(leftMargin, y))
+        y = y + 40
+        imgui.SetCursorPosX(centerX - 200)
         imgui.TextWrapped("НО В СЛЕДУЮЩИЙ РАЗ ЭТО МОЖЕТ БЫТЬ СТИЛЛЕР!")
 
-        y = y + lineHeight * 3.5
+        y = y + 50
+        imgui.SetCursorPosX(centerX - 260)
+        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), "Скрипты из чатов, непонятных источников,")
+        imgui.SetCursorPosX(centerX - 220)
+        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), "кряки/сливы VIP-версий в 99% случаев")
+        imgui.SetCursorPosX(centerX - 140)
+        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), "ОПАСНЫ для устройства/аккаунта!")
 
-        imgui.SetCursorPos(imgui.ImVec2(leftMargin, y))
-        imgui.TextColored(imgui.ImVec4(1, 0.9, 0.2, 1), "ПРАВИЛА БЕЗОПАСНОСТИ — ЗАПОМНИ!")
+        y = y + 60
+        imgui.SetCursorPosX(centerX - 140)
+        imgui.TextColored(imgui.ImVec4(1, 0.9, 0.2, 1), "ПРАВИЛА БЕЗОПАСНОСТИ")
 
-        y = y + lineHeight * 2
+        y = y + 40
 
         local tips = {
-            "• Никогда не скачивай .lua файлы от незнакомцев в Discord/Telegram/VK/форумах!",
-            "• Массивы чисел {104,116,116,112,...} — почти всегда скрытый стиллер!",
-            "• requests.get / requests.post на discord webhooks — крадут токены!",
-            "• io.open в Local Storage или %appdata% — кража Discord-токенов",
-            "• loadstring / dofile / loadfile с URL — подгружает вредоносный код",
+            "• Никогда не скачивай .lua от незнакомцев в Discord/Telegram/VK/форумах!",
+            "• {104,116,116,112,...} — почти всегда скрытый стиллер!",
+            "• requests на discord webhooks — крадут токены!",
+            "• io.open в Local Storage / %appdata% — кража токенов",
+            "• loadstring / dofile с URL — подгружает вредоносный код",
             "• os.execute / os.remove / os.rename — опасные команды",
             "• debug.getinfo / traceback / string.dump — скрывают вред",
-            "• ImGui окно без крестика + NoMove/NoResize — классика обмана"
+            "• ImGui без крестика + NoMove/NoResize — классика обмана"
         }
 
         for _, tip in ipairs(tips) do
-            imgui.SetCursorPos(imgui.ImVec2(leftMargin, y))
+            imgui.SetCursorPosX(centerX - (winWidth * 0.45))
             imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.98, 0.98, 0.98, 1))
             imgui.TextWrapped(tip)
             imgui.PopStyleColor()
-            y = y + lineHeight * 1.4
+            y = y + 38
         end
 
-        y = y + lineHeight * 3.5
+        y = y + 50
 
-        imgui.SetCursorPos(imgui.ImVec2(leftMargin, y))
+        imgui.SetCursorPosX(centerX - 180)
         imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(0.4, 0.8, 1, 1))
-        imgui.TextWrapped("Открывай .lua в Notepad++ или VS Code ПЕРЕД запуском!")
+        imgui.TextWrapped("Открывай .lua в Notepad++ / VS Code перед запуском!")
         imgui.PopStyleColor()
 
-        y = y + lineHeight * 2
+        y = y + 40
 
-        imgui.SetCursorPos(imgui.ImVec2(leftMargin, y))
+        imgui.SetCursorPosX(centerX - 160)
         imgui.PushStyleColor(imgui.Col.Text, imgui.ImVec4(1, 0.6, 0.2, 1))
         imgui.TextWrapped("Не верь 'бесплатным VIP' и 'премиуму за 0 руб'!")
         imgui.PopStyleColor()
