@@ -1,6 +1,6 @@
--- SafeTrollWarning.lua
--- Полезное предупреждение вместо вредного троллинга
--- Добавлено предупреждение про файлы из лички и чатов
+-- Loader.lua
+-- Показывает полезное предупреждение новичкам через 17 секунд
+-- Это не стиллер, а урок безопасности
 
 local imgui = require 'mimgui'
 local encoding = require 'encoding'
@@ -8,6 +8,7 @@ encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
 local window = imgui.new.bool(false)
+local blink_timer = 0  -- для мигания текста
 
 function main()
     if not isSampfuncsLoaded() or not isSampLoaded() then
@@ -15,15 +16,15 @@ function main()
         return
     end
 
-    -- Ждём 17 секунд (классика троллинга)
+    -- Ждём 17 секунд — как в классических троллинг-скриптах
     wait(17000)
 
-    sampAddChatMessage("[Скрипт] Прошло время... открываю окно", -1)
-    print("[Скрипт] Показываем предупреждение новичку")
+    sampAddChatMessage("[Loader] Прошло 17 секунд... открываю важное предупреждение", -1)
+    print("[Loader] Показываем урок новичку")
 
     window[0] = true
 
-    imgui.OnFrame(function() return window[0] end, function(player)
+    imgui.OnFrame(function() return window[0] end, function()
         local resX, resY = getScreenResolution()
 
         imgui.SetNextWindowPos(imgui.ImVec2(0, 0), imgui.Cond.Always)
@@ -39,20 +40,26 @@ function main()
             imgui.WindowFlags.NoSavedSettings
         )
 
-        local centerX = resX / 2
-        local centerY = resY / 2
+        local cx = resX / 2
+        local cy = resY / 2
 
-        imgui.SetCursorPos(imgui.ImVec2(centerX - 380, centerY - 180))
-        imgui.TextColored(imgui.ImVec4(0.1, 0.8, 0.1, 1.0), u8"На этот раз тебе ПОВЕЗЛО!")
-        imgui.Spacing()
-        imgui.TextColored(imgui.ImVec4(1, 1, 0.2, 1), u8"Это обычная пустышка — просто троллинг-окно.")
-        imgui.Spacing()
-        imgui.TextColored(imgui.ImVec4(1, 0.3, 0.3, 1), u8"Но в следующий раз это МОЖЕТ БЫТЬ СТИЛЛЕР!")
+        -- Мигание главной надписи
+        blink_timer = blink_timer + 0.05
+        local alpha = 0.7 + 0.3 * math.sin(blink_timer * 5)
 
-        imgui.Dummy(imgui.ImVec2(0, 20))
+        imgui.SetCursorPos(imgui.ImVec2(cx - 420, cy - 220))
+        imgui.TextColored(imgui.ImVec4(0.1, 0.9, 0.1, alpha), u8"НА ЭТОТ РАЗ ТЕБЕ ПОВЕЗЛО!")
 
-        imgui.SetCursorPosX(centerX - 320)
-        imgui.Text(u8"Самые важные правила безопасности (читай внимательно!)")
+        imgui.SetCursorPos(imgui.ImVec2(cx - 340, cy - 160))
+        imgui.TextColored(imgui.ImVec4(1, 1, 0.3, 1), u8"Это обычная пустышка — просто троллинг-окно.")
+
+        imgui.SetCursorPos(imgui.ImVec2(cx - 380, cy - 120))
+        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), u8"НО В СЛЕДУЮЩИЙ РАЗ ЭТО МОЖЕТ БЫТЬ СТИЛЛЕР!")
+
+        imgui.Dummy(imgui.ImVec2(0, 40))
+
+        imgui.SetCursorPosX(cx - 360)
+        imgui.TextColored(imgui.ImVec4(1, 0.8, 0.2, 1), u8"ПРАВИЛА БЕЗОПАСНОСТИ — ЧИТАЙ И ЗАПОМНИ!")
 
         local tips = {
             u8"• НИКОГДА не скачивай и не устанавливай .lua файлы, которые тебе скинули в личку, в чатах Discord/Telegram/VK или на форумах от незнакомцев!",
@@ -65,18 +72,19 @@ function main()
             u8"• Окно ImGui без кнопки закрытия + NoMove/NoResize → классический троллинг"
         }
 
-        for i, tip in ipairs(tips) do
-            imgui.SetCursorPosX(centerX - 380)
-            imgui.TextColored(imgui.ImVec4(0.9, 0.9, 0.9, 1), tip)
-            imgui.Dummy(imgui.ImVec2(0, 4))
+        for _, tip in ipairs(tips) do
+            imgui.SetCursorPosX(cx - 420)
+            imgui.TextColored(imgui.ImVec4(0.95, 0.95, 0.95, 1), tip)
+            imgui.Dummy(imgui.ImVec2(0, 6))
         end
 
-        imgui.Dummy(imgui.ImVec2(0, 30))
+        imgui.Dummy(imgui.ImVec2(0, 50))
 
-        imgui.SetCursorPos(imgui.ImVec2(centerX - 200, centerY + 120))
+        imgui.SetCursorPos(imgui.ImVec2(cx - 260, cy + 140))
         imgui.TextColored(imgui.ImVec4(0.4, 0.8, 1, 1), u8"Всегда открывай .lua в Notepad++ или VS Code ПЕРЕД запуском!")
-        imgui.SetCursorPos(imgui.ImVec2(centerX - 180, centerY + 150))
-        imgui.TextColored(imgui.ImVec4(1, 0.6, 0, 1), u8"Не верь 'бесплатным премиумам' с форумов и тг")
+
+        imgui.SetCursorPos(imgui.ImVec2(cx - 240, cy + 180))
+        imgui.TextColored(imgui.ImVec4(1, 0.6, 0.2, 1), u8"Не верь 'бесплатным премиумам' с форумов и тг!")
 
         -- Окно остаётся открытым навсегда
         window[0] = true
