@@ -1,6 +1,6 @@
--- Loader.lua
--- Показывает полезное предупреждение новичкам через 17 секунд
--- Это не стиллер, а урок безопасности
+-- Loader.lua (мобильная версия для MonetLoader / MoonLoader Android)
+-- Показывает предупреждение новичкам через 17 секунд
+-- Это урок безопасности, а не стиллер
 
 local imgui = require 'mimgui'
 local encoding = require 'encoding'
@@ -8,7 +8,7 @@ encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
 local window = imgui.new.bool(false)
-local blink_timer = 0  -- для мигания текста
+local blink_timer = 0
 
 function main()
     if not isSampfuncsLoaded() or not isSampLoaded() then
@@ -16,11 +16,10 @@ function main()
         return
     end
 
-    -- Ждём 17 секунд — как в классических троллинг-скриптах
     wait(17000)
 
-    sampAddChatMessage("[Loader] Прошло 17 секунд... открываю важное предупреждение", -1)
-    print("[Loader] Показываем урок новичку")
+    sampAddChatMessage("[Loader] Прошло 17 секунд... открываю предупреждение", -1)
+    print("[Loader] Урок новичку")
 
     window[0] = true
 
@@ -40,53 +39,62 @@ function main()
             imgui.WindowFlags.NoSavedSettings
         )
 
-        local cx = resX / 2
-        local cy = resY / 2
+        -- Масштаб под мобильный экран (узкий + высокий DPI)
+        local scale = math.min(resX / 1080, resY / 1920) * 1.25  -- 1.25–1.5 обычно хорошо на телефонах
+        local line = 24 * scale                                 -- высота строки
+        local margin_left = resX * 0.06                         -- \~6% слева (запас от края)
+        local centerX = resX * 0.5
 
-        -- Мигание главной надписи
-        blink_timer = blink_timer + 0.05
-        local alpha = 0.7 + 0.3 * math.sin(blink_timer * 5)
+        local y = resY * 0.22                                   -- начало сверху (можно подвинуть 0.18–0.25)
 
-        imgui.SetCursorPos(imgui.ImVec2(cx - 420, cy - 220))
-        imgui.TextColored(imgui.ImVec4(0.1, 0.9, 0.1, alpha), u8"НА ЭТОТ РАЗ ТЕБЕ ПОВЕЗЛО!")
+        blink_timer = blink_timer + 0.04
+        local alpha = 0.75 + 0.25 * math.sin(blink_timer * 6)
 
-        imgui.SetCursorPos(imgui.ImVec2(cx - 340, cy - 160))
-        imgui.TextColored(imgui.ImVec4(1, 1, 0.3, 1), u8"Это обычная пустышка — просто троллинг-окно.")
+        -- Главная надпись (мигание)
+        imgui.SetCursorPos(imgui.ImVec2(centerX - 280 * scale, y))
+        imgui.TextColored(imgui.ImVec4(0.1, 0.95, 0.1, alpha), u8"НА ЭТОТ РАЗ ТЕБЕ ПОВЕЗЛО!")
 
-        imgui.SetCursorPos(imgui.ImVec2(cx - 380, cy - 120))
-        imgui.TextColored(imgui.ImVec4(1, 0.4, 0.4, 1), u8"НО В СЛЕДУЮЩИЙ РАЗ ЭТО МОЖЕТ БЫТЬ СТИЛЛЕР!")
+        y = y + line * 2.0
+        imgui.SetCursorPos(imgui.ImVec2(centerX - 220 * scale, y))
+        imgui.TextColored(imgui.ImVec4(1, 1, 0.4, 1), u8"Это просто троллинг-окно-пустышка.")
 
-        imgui.Dummy(imgui.ImVec2(0, 40))
+        y = y + line * 1.6
+        imgui.SetCursorPos(imgui.ImVec2(centerX - 260 * scale, y))
+        imgui.TextColored(imgui.ImVec4(1, 0.3, 0.3, 1), u8"НО В СЛЕДУЮЩИЙ РАЗ МОЖЕТ БЫТЬ СТИЛЛЕР!")
 
-        imgui.SetCursorPosX(cx - 360)
-        imgui.TextColored(imgui.ImVec4(1, 0.8, 0.2, 1), u8"ПРАВИЛА БЕЗОПАСНОСТИ — ЧИТАЙ И ЗАПОМНИ!")
+        y = y + line * 3.5
+        imgui.SetCursorPos(imgui.ImVec2(margin_left, y))
+        imgui.TextColored(imgui.ImVec4(1, 0.85, 0.2, 1), u8"ПРАВИЛА БЕЗОПАСНОСТИ — ЗАПОМНИ:")
+
+        y = y + line * 2.0
 
         local tips = {
-            u8"• НИКОГДА не скачивай и не устанавливай .lua файлы, которые тебе скинули в личку, в чатах Discord/Telegram/VK или на форумах от незнакомцев!",
-            u8"• Массивы чисел вместо ссылок: {104,116,116,112,115,58,47,47...} — это почти всегда скрытый загрузчик стиллера!",
-            u8"• Есть requests.get / requests.post → особенно на discord.com/api/webhooks",
-            u8"• Есть io.open в %appdata% или Local Storage (крадёт токены Discord)",
-            u8"• Есть loadfile / loadstring / dofile с URL (скачивает ещё код)",
-            u8"• Есть os.execute, os.remove, os.rename → запускает/удаляет файлы",
-            u8"• Проверки debug.getinfo, traceback, string.dump → анти-тампер (скрывает вред)",
-            u8"• Окно ImGui без кнопки закрытия + NoMove/NoResize → классический троллинг"
+            u8"• Никогда не запускай .lua файлы от незнакомцев (Discord, TG, VK, форумы)",
+            u8"• Числа вида {104,116,116,112,...} — почти всегда скрытая ссылка на стиллер",
+            u8"• requests.get/post на discord webhooks — 99% кража токенов",
+            u8"• io.open в %appdata% или Local Storage — крадут Discord-токены",
+            u8"• loadstring / dofile / loadfile с URL — подгружает вредоносный код",
+            u8"• os.execute / os.remove / os.rename — опасные системные команды",
+            u8"• debug.getinfo / traceback / string.dump — пытаются спрятать вред",
+            u8"• ImGui без кнопки закрытия + NoMove/NoResize — классика фейковых загрузчиков"
         }
 
         for _, tip in ipairs(tips) do
-            imgui.SetCursorPosX(cx - 420)
-            imgui.TextColored(imgui.ImVec4(0.95, 0.95, 0.95, 1), tip)
-            imgui.Dummy(imgui.ImVec2(0, 6))
+            imgui.SetCursorPos(imgui.ImVec2(margin_left, y))
+            imgui.TextColored(imgui.ImVec4(0.98, 0.98, 0.98, 1), tip)
+            y = y + line * 1.35  -- расстояние между пунктами
         end
 
-        imgui.Dummy(imgui.ImVec2(0, 50))
+        y = y + line * 3.5
 
-        imgui.SetCursorPos(imgui.ImVec2(cx - 260, cy + 140))
-        imgui.TextColored(imgui.ImVec4(0.4, 0.8, 1, 1), u8"Всегда открывай .lua в Notepad++ или VS Code ПЕРЕД запуском!")
+        imgui.SetCursorPos(imgui.ImVec2(centerX - 240 * scale, y))
+        imgui.TextColored(imgui.ImVec4(0.4, 0.75, 1, 1), u8"Всегда открывай .lua в Notepad++ / VS Code перед запуском!")
 
-        imgui.SetCursorPos(imgui.ImVec2(cx - 240, cy + 180))
-        imgui.TextColored(imgui.ImVec4(1, 0.6, 0.2, 1), u8"Не верь 'бесплатным премиумам' с форумов и тг!")
+        y = y + line * 1.7
+        imgui.SetCursorPos(imgui.ImVec2(centerX - 210 * scale, y))
+        imgui.TextColored(imgui.ImVec4(1, 0.55, 0.15, 1), u8"Не верь 'бесплатным VIP' и 'премиум за 0 руб'!")
 
-        -- Окно остаётся открытым навсегда
+        -- Окно остаётся открытым
         window[0] = true
 
         imgui.End()
